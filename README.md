@@ -6,11 +6,16 @@ Same functionality exists in `grep` but this one is slower and simpler :-)
 
 ## Synopsis
 
-   pgrep <flag> <pattern> [<flag> <pattern> ...] [file]
+```pgrep <flag> <pattern> [<flag> <pattern> ...] [file]```
 
 ## Usage
 
-`pgrep -p foo -c bar -f baz foobar.txt` - grep three patterns in foobar.txt
+Grep three patterns in foobar.txt
+
+```pgrep -p foo -c bar -pc baz foobar.txt```
+
+Lines matching foo will be printed, number of lines matching bar will be printed,
+and the lines matching baz will be printed and the number of lines will be printed.
 
 ### File
 
@@ -18,7 +23,7 @@ The file name is optional. If not supplied, STDIN is used.
 
 ### Patterns
 
-Patterns is specified as in [Google RE2](https://github.com/google/re2/wiki/Syntax)
+Patterns is regular expressions specified as in [Google RE2](https://github.com/google/re2/wiki/Syntax)
 
 ### Flags
     * `-p` print matching lines
