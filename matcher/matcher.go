@@ -1,6 +1,6 @@
-package matcher
+// Package matcher
 
-// pgrep - simpel parallel grep
+package matcher
 
 import (
 	"bufio"
