@@ -1,28 +1,14 @@
-package main
-
 // pgrep - simpel parallel grep
 
+package main
+
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"regexp"
-)
 
-type Matcher struct {
-	kind    MatcherKind
-	pattern string
-	count   int
-}
-
-type MatcherKind int
-
-const (
-	PrintMatcher = iota
-	CountMatcher
-	PrintCountMatcher
+	"./matcher"
 )
 
 func printUsage() {
@@ -60,15 +46,18 @@ func main() {
 		return
 	}
 
+	// Create matcher
+	m := matcher.New(matchers, reader, os.Stdout)
+
 	// Primus motor
-	err = printAndCount(reader, matchers)
+	err = m.PrintAndCount()
 	if err != nil {
 		fmt.Printf("Error when matching: %v\n", err.Error())
 		return
 	}
 
 	// Present summary
-	printCounts(matchers)
+	m.PrintCounts()
 
 }
 
@@ -89,15 +78,15 @@ func hasHelpArgument() bool {
 }
 
 // Read arguments to get matchers and reader
-func readArguments() (io.Reader, []Matcher, error) {
+func readArguments() (io.Reader, []matcher.Match, error) {
 
 	if len(os.Args) < 3 {
-		return nil, []Matcher{}, errors.New("Too few args. Must have atleast one pattern")
+		return nil, []matcher.Match{}, errors.New("Too few args. Must have atleast one pattern")
 	}
 
 	reader, err := getReader()
 	if err != nil {
-		return nil, []Matcher{}, err
+		return nil, []matcher.Match{}, err
 	}
 
 	ms, err := getMatchers()
@@ -121,77 +110,22 @@ func getReader() (reader io.Reader, err error) {
 }
 
 // Get matchers from cammand line
-func getMatchers() ([]Matcher, error) {
+func getMatchers() ([]matcher.Match, error) {
 
-	ms := []Matcher{}
+	ms := []matcher.Match{}
 
 	for i := 1; i < len(os.Args)-1; i += 2 {
-		k, err := flagToMatcherKind(os.Args[i])
+		k, err := matcher.FlagToMatchKind(os.Args[i])
 		if err != nil {
-			return []Matcher{}, err
+			return []matcher.Match{}, err
 		}
 
-		ms = append(ms, Matcher{
-			kind:    k,
-			pattern: os.Args[i+1],
-			count:   0,
+		ms = append(ms, matcher.Match{
+			Kind:    k,
+			Pattern: os.Args[i+1],
+			Count:   0,
 		})
 	}
 
 	return ms, nil
-}
-
-// Counts all matches and prints matches for matchers af printing kind
-func printAndCount(r io.Reader, ms []Matcher) error {
-	s := bufio.NewScanner(r)
-
-	// Scan reader line by line
-	for s.Scan() {
-		line := s.Text()
-
-		// Loop all matchers to count and maybe print line
-		for i := 0; i < len(ms); i++ {
-			match, err := regexp.Match(ms[i].pattern, []byte(line))
-			if err != nil {
-				return err
-			}
-
-			if match {
-				ms[i].count++
-
-				// Print if that kind of matcher
-				if ms[i].kind == PrintMatcher || ms[i].kind == PrintCountMatcher {
-					fmt.Printf("<%d> %v\n", i, line)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// Print the counts of all counting matchers
-func printCounts(ms []Matcher) {
-
-	for i, m := range ms {
-		if m.kind == CountMatcher || m.kind == PrintCountMatcher {
-			fmt.Printf("Matcher %q <%d> got %d matches\n", m.pattern, i, m.count)
-		}
-	}
-
-}
-
-// Converts a cammand line flag to matcher kind
-func flagToMatcherKind(flag string) (k MatcherKind, err error) {
-
-	switch flag {
-	case "-p":
-		return PrintMatcher, nil
-	case "-c":
-		return CountMatcher, nil
-	case "-pc":
-		return PrintCountMatcher, nil
-	}
-
-	return k, errors.New("Unknown flag: " + flag)
 }
